@@ -125,6 +125,14 @@ impl Model {
         return Ok(());
     }
 
+    pub fn remove_statement(&self, statement: &Statement) -> Result<(), i32> {
+        let res = unsafe { librdf_model_remove_statement(self.as_ptr(), statement.as_ptr()) };
+        if res != 0 {
+            return Err(res);
+        }
+        return Ok(());
+    }
+
     pub fn add_string_literal_statement<S: Into<Vec<u8>>>(
         &self,
         subject: &Node,
@@ -449,7 +457,7 @@ impl Serializer {
 
 #[cfg(test)]
 mod tests {
-    use super::{KvStorage, Model, Node, Statement, Uri, EntryAction};
+    use super::{EntryAction, KvStorage, Model, Node, Statement, Uri};
 
     #[test]
     fn statement_constructor() {
@@ -501,7 +509,6 @@ mod tests {
         println!("{:?}", entry_actions);
 
         unwrap!(storage.copy_entries(&mut entry_actions));
-
 
         // println!("{:?}, {:?}", triple1, triple2);
 

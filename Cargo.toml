@@ -11,6 +11,7 @@ serde = "~1.0.89"
 redland-sys = { path = "./redland-sys" }
 lazy_static = "~1.2.0"
 unwrap = "~1.2.0"
+hex_fmt = "0.3.0"
 
 [dev-dependencies]
 bincode = "~1.1.2"
