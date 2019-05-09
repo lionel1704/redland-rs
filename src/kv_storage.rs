@@ -1,10 +1,13 @@
 //! Redland storage implementation based on key/value representation.
 //! Converted from C code into Rust using C2Rust.
 
+extern crate hex_fmt;
+
 use crate::*;
 use libc::c_char;
 use std::ptr;
 use std::slice;
+// use hex_fmt::HexFmt;
 
 pub struct KvStorage(*mut self::librdf_storage);
 
@@ -68,7 +71,7 @@ impl KvStorage {
                         return Err(-1);
                     }
                 }
-                EntryAction::Delete(_i, _key) => {}
+                EntryAction::Delete(_i, _key, _data) => {}
             }
         }
 
@@ -89,7 +92,28 @@ impl Drop for KvStorage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EntryAction {
     Insert(i32, Vec<u8>, Vec<u8>),
-    Delete(i32, Vec<u8>),
+    Delete(i32, Vec<u8>, Vec<u8>),
+}
+
+impl fmt::Display for EntryAction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            EntryAction::Insert(ref id, ref k, ref v) => write!(
+                f,
+                "\nInserting:\nID: {}\nKey: {}\nValue: {}",
+                id,
+                hex_fmt::HexFmt(k),
+                hex_fmt::HexFmt(v)
+            ),
+            EntryAction::Delete(ref id, ref k, ref v) => write!(
+                f,
+                "\nDeleting:\nID: {}\nKey: {}\nValue: {}",
+                id,
+                hex_fmt::HexFmt(k),
+                hex_fmt::HexFmt(v)
+            ),
+        }
+    }
 }
 
 pub struct MDataContext {
@@ -869,7 +893,7 @@ pub type librdf_hash_datum = librdf_hash_datum_s;
  *
  */
 /* * data type used to describe hash key and data */
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct librdf_hash_datum_s {
     pub world: *mut librdf_world,
@@ -2412,6 +2436,8 @@ unsafe extern "C" fn librdf_storage_hashes_add_remove_statement(
                             ea = EntryAction::Delete(
                                 i,
                                 slice::from_raw_parts((*context).key_buffer, key_len as usize)
+                                    .to_vec(),
+                                slice::from_raw_parts((*context).value_buffer, value_len as usize)
                                     .to_vec(),
                             );
 
