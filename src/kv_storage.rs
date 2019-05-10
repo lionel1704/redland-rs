@@ -1,6 +1,6 @@
 //! Redland storage implementation based on key/value representation.
 //! Converted from C code into Rust using C2Rust.
-
+#![allow(clippy::cast_ptr_alignment)]
 use crate::*;
 use libc::c_char;
 use std::ptr;
@@ -2333,11 +2333,7 @@ unsafe extern "C" fn librdf_storage_hashes_add_remove_statement(
                     &mut (*context).key_buffer_len,
                     key_len,
                 )
-            {
-                status = 1i32;
-                break;
-            } else if 0
-                == librdf_statement_encode_parts2(
+                || 0 == librdf_statement_encode_parts2(
                     world,
                     statement,
                     0 as *mut librdf_node,
@@ -2361,20 +2357,13 @@ unsafe extern "C" fn librdf_storage_hashes_add_remove_statement(
                         0i32 as size_t,
                         fields,
                     );
-                    if 0 == value_len {
-                        status = 1i32;
-                        break;
-                    } else if 0
-                        != librdf_storage_hashes_grow_buffer(
+                    if 0 == value_len
+                        || 0 != librdf_storage_hashes_grow_buffer(
                             &mut (*context).value_buffer,
                             &mut (*context).value_buffer_len,
                             value_len,
                         )
-                    {
-                        status = 1i32;
-                        break;
-                    } else if 0
-                        == librdf_statement_encode_parts2(
+                        || 0 == librdf_statement_encode_parts2(
                             world,
                             statement,
                             context_node,
@@ -2781,10 +2770,8 @@ unsafe extern "C" fn librdf_storage_hashes_node_iterator_get_method(
             }
         }
         value = librdf_iterator_get_value((*context).iterator) as *mut librdf_hash_datum;
-        if value.is_null() {
-            return 0 as *mut libc::c_void;
-        } else if 0
-            == librdf_statement_decode2(
+        if value.is_null()
+            || 0 == librdf_statement_decode2(
                 world,
                 &mut (*context).statement,
                 0 as *mut *mut librdf_node,
