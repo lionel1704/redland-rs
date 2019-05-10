@@ -141,6 +141,14 @@ impl Model {
         Ok(())
     }
 
+    pub fn remove_statement(&self, statement: &Statement) -> Result<(), i32> {
+        let res = unsafe { librdf_model_remove_statement(self.as_ptr(), statement.as_ptr()) };
+        if res != 0 {
+            return Err(res);
+        }
+        return Ok(());
+    }
+
     pub fn add_string_literal_statement<S: Into<Vec<u8>>>(
         &self,
         subject: &Node,
@@ -585,7 +593,7 @@ impl Serializer {
 
 #[cfg(test)]
 mod tests {
-    use super::{KvStorage, Model, Node, Statement, Uri};
+    use super::{EntryAction, KvStorage, Model, Node, Statement, Uri};
 
     #[test]
     fn statement_constructor() {
@@ -596,13 +604,22 @@ mod tests {
         let mut triple = unwrap!(Statement::new());
         triple.set_subject(s); // `s` moved to `triple`
 
+        triple.set_predicate(p);
+        triple.set_object(o);
+
         let s = triple.subject();
-        println!("S: {:?}", s);
+        let p = triple.predicate();
+        let o = triple.object();
+
+        println!("{:?}", triple);
+        println!("Subject: {:?}", s);
+        println!("Predicate: {:?}", p);
+        println!("Object: {:?}", o);
     }
 
     #[test]
     fn model_iterator() {
-        let storage = unwrap!(KvStorage::new());
+        let mut storage = unwrap!(KvStorage::new());
         let model = unwrap!(Model::new(&storage));
 
         let uri1 = unwrap!(Uri::new("https://localhost/#dolly"));
@@ -618,8 +635,13 @@ mod tests {
         triple2.set_predicate(unwrap!(Node::new_from_uri(&uri2)));
         triple2.set_object(unwrap!(Node::new_from_literal("goodbye", None, false)));
 
-        unwrap!(model.add_statement(&triple1));
+        unwrap!(model.add_string_literal_statement(&triple1));
         unwrap!(model.add_statement(&triple2));
+
+        let mut entry_actions: Vec<EntryAction> = storage.entry_actions().to_vec();
+        println!("{:?}", entry_actions);
+
+        unwrap!(storage.copy_entries(&mut entry_actions));
 
         // println!("{:?}, {:?}", triple1, triple2);
 
