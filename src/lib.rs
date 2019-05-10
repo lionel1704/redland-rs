@@ -99,6 +99,12 @@ impl World {
     }
 }
 
+impl Default for World {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Model {
     pub fn new(storage: &KvStorage) -> Result<Self, i32> {
         unsafe { Self::from_raw_storage(storage.as_ptr()) }
@@ -124,7 +130,7 @@ impl Model {
         if res != 0 {
             return Err(res);
         }
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_statement(&self, statement: &Statement) -> Result<(), i32> {
@@ -132,7 +138,7 @@ impl Model {
         if res != 0 {
             return Err(res);
         }
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_string_literal_statement<S: Into<Vec<u8>>>(
@@ -162,7 +168,7 @@ impl Model {
         if res != 0 {
             return Err(res);
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -178,6 +184,10 @@ impl ModelRef {
 
     pub fn len(&self) -> i32 {
         unsafe { librdf_model_size(self.as_ptr()) }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -227,7 +237,9 @@ impl Query {
                 c_query_lang.as_ptr(),
                 ptr::null_mut(),
                 c_query_string.as_ptr() as *const _,
-                base_uri.as_ref().map_or_else(ptr::null_mut, |u| u.as_ptr()),
+                base_uri
+                    .as_ref()
+                    .map_or_else(ptr::null_mut, ForeignType::as_ptr),
             )
         };
         if res.is_null() {
@@ -566,7 +578,7 @@ impl Serializer {
             };
             librdf_free_memory(result as *mut _);
 
-            return res.ok_or(-1);
+            res.ok_or(-1)
         }
     }
 }
@@ -578,11 +590,8 @@ mod tests {
     #[test]
     fn statement_constructor() {
         let uri1 = unwrap!(Uri::new("https://localhost/#dolly"));
-        let uri2 = unwrap!(Uri::new("https://localhost/#hears"));
 
         let s = unwrap!(Node::new_from_uri(&uri1));
-        let p = unwrap!(Node::new_from_uri(&uri2));
-        let o = unwrap!(Node::new_from_literal("hello", None, false));
 
         let mut triple = unwrap!(Statement::new());
         triple.set_subject(s); // `s` moved to `triple`
